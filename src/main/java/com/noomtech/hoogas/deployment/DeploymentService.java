@@ -1,12 +1,11 @@
 package com.noomtech.hoogas.deployment;
 
-import com.noomtech.hoogas.config.HoogasConfigService;
 import com.noomtech.hoogas.constants.Constants;
-import com.noomtech.hoogas.datamodels.Application;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import static com.noomtech.hoogas.constants.Constants.NAME_VERSION_SEPARATOR;
 
@@ -14,7 +13,6 @@ import static com.noomtech.hoogas.constants.Constants.NAME_VERSION_SEPARATOR;
 /**
  * Periodically checks the deployment directory for directories whos names have the format "app-name___version", and  will move these directories to that application's
  * installation folder under the root directory.  If there's an existing version deployed it's moved to the archive directory first.
- * It will then update the config for the applications deployed on hoogas.
  * @author Joshua Newman, December 2024
  */
 public class DeploymentService implements PeriodicChecker {
@@ -23,81 +21,97 @@ public class DeploymentService implements PeriodicChecker {
     private static final File APPLICATION_DIR = Constants.HoogasDirectory.APPLICATIONS.getDirFile();
     private static final File DEPLOYMENT_DIR = Constants.HoogasDirectory.DEPLOYMENTS.getDirFile();
     private static final File ARCHIVE_DIR = Constants.HoogasDirectory.ARCHIVE.getDirFile();
-    private final long CHECKING_INTERVAL;
 
+    private final int checkingInterval;
     private long whenLastRunFinished;
 
 
-    public DeploymentService() {
-        CHECKING_INTERVAL = Long.parseLong(HoogasConfigService.getInstance().getSetting("deployment_service.checking.interval"));
+    public DeploymentService(int checkingInterval) {
+        this.checkingInterval = checkingInterval;
+        //Build the initial list of deployed applications by looking at the file structure
+        var deployedApps = APPLICATION_DIR.listFiles();
+        var appNames = new ArrayList<String>();
+        var appVersions = new ArrayList<String>();
+
+        for (File deployedApp : deployedApps) {
+            if (deployedApp.isDirectory() && deployedApp.getName().contains(NAME_VERSION_SEPARATOR)) {
+                var split = deployedApp.getName().split(NAME_VERSION_SEPARATOR);
+                appNames.add(split[0]);
+                appVersions.add(split[1]);
+            } else {
+                System.out.println("WARNING - Invalid application present in '" + APPLICATION_DIR.getPath() + "' :" + deployedApp.getPath());
+            }
+        }
+
+        DeployedApplicationsHolder.addApplications(appNames.toArray(new String[0]), appVersions.toArray(new String[0]));
     }
 
-    @Override
-    public void doCheck() throws IOException {
+    void checkForNewDeployments() throws IOException {
 
         if(checkShouldRun(whenLastRunFinished)) {
+            try {
+                var applicationsAlreadyDeployed = DeployedApplicationsHolder.getDeployedApplications();
+                var filesInDeploymentDir = DEPLOYMENT_DIR.listFiles();
+                for (File fileInDestinationDirectory : filesInDeploymentDir) {
 
-            var filesInDeploymentDir = DEPLOYMENT_DIR.listFiles();
-            for (File fileInDestinationDirectory : filesInDeploymentDir) {
+                    boolean invalidFile = true;
+                    if (fileInDestinationDirectory.getName().contains(NAME_VERSION_SEPARATOR)) {
 
-                boolean invalidFile = true;
-                if(fileInDestinationDirectory.getName().contains(NAME_VERSION_SEPARATOR)) {
+                        var split = fileInDestinationDirectory.getName().split(NAME_VERSION_SEPARATOR);
+                        if (fileInDestinationDirectory.isDirectory() && split.length == 2) {
 
-                    var split = fileInDestinationDirectory.getName().split(NAME_VERSION_SEPARATOR);
-                    if (fileInDestinationDirectory.isDirectory() && split.length == 2) {
+                            invalidFile = false;
+                            System.out.println("Found deployed application at - " + fileInDestinationDirectory.getPath() + ".  Will archive existing application if there is one and deploy this new one");
 
-                        invalidFile = false;
-                        System.out.println("Found deployed application at - " + fileInDestinationDirectory.getPath() + ".  Will archive existing application if there is one and deploy this new one");
+                            var newAppName = split[0];
+                            var newAppVersion = split[1];
 
-                        var newAppName = split[0];
-                        var newAppVersion = split[1];
+                            var destinationForDeployment = new File(APPLICATION_DIR.getPath() + File.separator + newAppName + NAME_VERSION_SEPARATOR + newAppVersion);
 
-                        var destinationForDeployment = new File(APPLICATION_DIR.getPath() + File.pathSeparator + newAppName + NAME_VERSION_SEPARATOR + newAppVersion);
+                            var existingApplicationVersion = applicationsAlreadyDeployed.get(newAppName);
+                            if (existingApplicationVersion != null) {
 
-                        var deployedApplications = HoogasConfigService.getInstance().getDeployedApplications();
-                        var existingApplication = deployedApplications.get(newAppName);
-                        var newApplication = false;
-                        if (existingApplication != null) {
+                                if (existingApplicationVersion.equals(newAppVersion)) {
+                                    System.out.println("WARNING - Version " + newAppVersion + " of application '" + newAppName + "' is already deployed.");
+                                }
+                                var existingApplicationDir = APPLICATION_DIR.getPath() + File.separator + newAppName + NAME_VERSION_SEPARATOR + existingApplicationVersion;
+                                var archivedApplicationDir = new File(ARCHIVE_DIR.getPath() + File.separator + newAppName + NAME_VERSION_SEPARATOR + existingApplicationVersion);
 
-                            var existingVersion = existingApplication.version();
-                            if (existingVersion.equals(newAppVersion)) {
-                                System.out.println("WARNING - Version " + newAppVersion + " of application '" + newAppName + "' is already deployed.");
+                                if (archivedApplicationDir.exists()) {
+                                    System.out.println("Application with same version already exists in archive - '" + archivedApplicationDir.getPath() + "'.  Adding identifier to distinguish it from the one we're just about to archive");
+                                    FileUtils.moveDirectory(archivedApplicationDir, new File(archivedApplicationDir.getPath() + "_old_" + System.currentTimeMillis()));
+                                }
+
+                                System.out.println("Moving '" + existingApplicationDir + "' to '" + archivedApplicationDir + "'");
+                                FileUtils.moveDirectory(new File(existingApplicationDir), archivedApplicationDir);
                             }
-                            var existingApplicationDir = existingApplication.installationDirectory();
-                            var archivedApplicationDir = new File(ARCHIVE_DIR.getPath() + File.pathSeparator + newAppName + NAME_VERSION_SEPARATOR + existingVersion);
 
-                            if (archivedApplicationDir.exists()) {
-                                System.out.println("Application with same version already exists in archive - '" + archivedApplicationDir.getPath() + "'.  Adding identifier to distinguish it from the one we're just about to archive");
-                                FileUtils.moveDirectory(archivedApplicationDir, new File(archivedApplicationDir.getPath() + "_old_" + System.currentTimeMillis()));
-                            }
-
-                            System.out.println("Moving '" + existingApplicationDir + "' to '" + archivedApplicationDir + "'");
-                            FileUtils.moveDirectory(new File(existingApplicationDir), archivedApplicationDir);
-                        } else {
-                            newApplication = true;
+                            System.out.println("Deploying '" + fileInDestinationDirectory.getPath() + "' to '" + destinationForDeployment.getPath() + "'");
+                            FileUtils.moveDirectory(fileInDestinationDirectory, destinationForDeployment);
+                            //Update the list of deployed applications
+                            DeployedApplicationsHolder.addApplications(new String[]{newAppName}, new String[]{newAppVersion});
+                            System.out.println("Deployment complete");
                         }
+                    }
 
-                        System.out.println("Deploying '" + fileInDestinationDirectory.getPath() + "' to '" + destinationForDeployment.getPath() + "'");
-                        FileUtils.moveDirectory(fileInDestinationDirectory, destinationForDeployment);
-                        System.out.println("Deployment complete");
-
-                        //Start command will be added via a config update bu a user
-                        HoogasConfigService.getInstance().updateApplications(new Application(newAppName, newAppVersion, null, destinationForDeployment.getPath()));
+                    if (invalidFile) {
+                        System.out.println("'" + fileInDestinationDirectory.getPath() + "' in deployment directory '" + DEPLOYMENT_DIR.getPath() + "' is invalid.  Ignoring");
                     }
                 }
-
-                if(invalidFile) {
-                    System.out.println("'" + fileInDestinationDirectory.getPath() + "' in deployment directory '" + DEPLOYMENT_DIR.getPath() + "' is invalid.  Ignoring");
-                }
             }
-            whenLastRunFinished = System.currentTimeMillis();
+            finally {
+                whenLastRunFinished = System.currentTimeMillis();
+            }
         }
     }
 
     @Override
-    public long getInterval() {
-        return CHECKING_INTERVAL;
+    public void doCheck() throws Exception {
+        checkForNewDeployments();
     }
 
-    //todo - unit test
+    @Override
+    public long getInterval() {
+        return checkingInterval;
+    }
 }

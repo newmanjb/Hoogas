@@ -5,11 +5,13 @@ import com.noomtech.hoogas.config.HoogasConfigService;
 import com.noomtech.hoogas.constants.Constants;
 import com.noomtech.hoogas.datamodels.Application;
 import com.noomtech.hoogas.datamodels.InternalMessageInbound;
+import com.noomtech.hoogas.deployment.DeployedApplicationsHolder;
 import com.noomtech.hoogas.deployment.PeriodicChecker;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -75,18 +77,20 @@ public class InboundMessagingService implements PeriodicChecker {
      * Scans each application's message directory for inbound messages and fires the listeners added to this class.
      */
     private void collect() throws Exception {
-        var apps = HoogasConfigService.getInstance().getDeployedApplications();
+        var apps = DeployedApplicationsHolder.getDeployedApplications();
         //Messages are collected first during the scanning routine and then sent in bulk.  It's more efficient
         //than firing all the listeners for each message from each application.
-        for(Application app : apps.values()) {
+        for(Map.Entry<String,String> entry : apps.entrySet()) {
             try {
-                var internalMessagesDir = new File(app.installationDirectory() + File.pathSeparator + Constants.HoogasDirectory.INTERNAL_MSGS_TO_HOOGAS.getDirName());
+                var internalMessagesDir = new File(Constants.HoogasDirectory.APPLICATIONS.getDirFile().getPath() +
+                        File.separator + entry.getKey() + Constants.NAME_VERSION_SEPARATOR + entry.getValue() +
+                        File.separator + Constants.HoogasDirectory.INTERNAL_MSGS_TO_HOOGAS.getDirName());
                 var msgFiles = internalMessagesDir.listFiles();
                 for (File msgFile : msgFiles) {
                     try {
                         var dataType = DataTypeInbound.valueOf(msgFile.getName());
                         try (var reader = new BufferedReader(new FileReader(msgFile))) {
-                            var message = new InternalMessageInbound(reader.readLine(), app);
+                            var message = new InternalMessageInbound(reader.readLine(), entry.getKey());
                             dataType.addReceivedMessage(message);
                             if(!msgFile.delete()) {
                                 throw new IllegalStateException("Could not delete message file: " + msgFile.getPath());

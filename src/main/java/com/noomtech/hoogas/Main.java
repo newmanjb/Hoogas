@@ -4,9 +4,10 @@ import com.noomtech.hoogas.app_management.AppManagementService;
 import com.noomtech.hoogas.config.HoogasConfigService;
 import com.noomtech.hoogas.config.public_config.PublicConfigService;
 import com.noomtech.hoogas.constants.Constants;
+import com.noomtech.hoogas.deployment.DeployedApplicationsHolder;
+import com.noomtech.hoogas.deployment.DeploymentService;
 import com.noomtech.hoogas.deployment.PeriodicChecker;
 import com.noomtech.hoogas.internal_messaging.InboundMessagingService;
-import com.noomtech.hoogas.deployment.DeploymentService;
 import com.noomtech.hoogas.internal_messaging.OutboundMessagingService;
 import com.noomtech.hoogas.monitoring.MonitoringService;
 import static com.noomtech.hoogas.constants.Constants.INSTALLATION_DIR;
@@ -21,6 +22,8 @@ public class Main {
 
     //todo - write the client-side functionality
     //todo - add a webserver that can be used by the services that interact with the users
+    //todo - unit tests for the inbound and outbound messaging
+    //todo - Use Application objects in the deployed application store.
 
     private volatile boolean shutdown;
 
@@ -50,12 +53,12 @@ public class Main {
 
     private Main() throws Exception {
 
-        //Build these first as they are used by the other services
+        //Set these up first as they are used by the other services
         HoogasConfigService.init();
         OutboundMessagingService.init();
 
+        var deploymentService = new DeploymentService(Integer.parseInt(HoogasConfigService.getInstance().getSetting("deployment_service.checking_interval")));
         var inboundMessageService = new InboundMessagingService();
-        var deploymentService = new DeploymentService();
         var monitoringService = new MonitoringService();
         var publicConfigService = new PublicConfigService();
         var appManagementService = new AppManagementService();
@@ -63,8 +66,8 @@ public class Main {
         //Set up the connections between these difference services
         inboundMessageService.addStatsListener(monitoringService);
         inboundMessageService.addConfigRequestListener(publicConfigService);
-        HoogasConfigService.getInstance().addApplicationUpdatedListener(monitoringService);
-        HoogasConfigService.getInstance().addApplicationUpdatedListener(appManagementService);
+        DeployedApplicationsHolder.addApplicationUpdatedListener(monitoringService);
+        DeployedApplicationsHolder.addApplicationUpdatedListener(appManagementService);
 
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
@@ -74,7 +77,8 @@ public class Main {
         }));
 
         //These services have routines which need to be run at set intervals e.g. checking for new messages or new deployments.
-        //I don't see the point in running them in a separate thread, as they are not very demanding routines
+        //I don't see the point in running them in a separate thread, as they are not very demanding routines and it makes everything
+        //a lot simpler
         var periodicCheckers = new PeriodicChecker[]{deploymentService, inboundMessageService};
         while(!shutdown) {
             for(PeriodicChecker periodicChecker : periodicCheckers) {

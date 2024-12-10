@@ -1,6 +1,6 @@
 package com.noomtech.hoogas.monitoring;
 
-import com.noomtech.hoogas.config.ConfiguredApplicationsUpdatedListener;
+import com.noomtech.hoogas.config.DeployedApplicationsUpdatedListener;
 import com.noomtech.hoogas.datamodels.InternalMessageInbound;
 import com.noomtech.hoogas.internal_messaging.StatsListener;
 
@@ -11,7 +11,7 @@ import java.util.List;
  * Maintains an up-to-date store of information on the status of all applications and allows it to be queried over REST
  * @author Joshua Newman, December 2024
  */
-public class MonitoringService implements StatsListener, ConfiguredApplicationsUpdatedListener {
+public class MonitoringService implements StatsListener, DeployedApplicationsUpdatedListener {
 
 
     public MonitoringService() {
@@ -25,7 +25,7 @@ public class MonitoringService implements StatsListener, ConfiguredApplicationsU
     }
 
     @Override
-    public void onApplicationUpdated() {
+    public void onApplicationsUpdated() {
         //todo - rebuild
     }
 }

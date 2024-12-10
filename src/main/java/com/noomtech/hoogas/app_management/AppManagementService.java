@@ -1,13 +1,13 @@
 package com.noomtech.hoogas.app_management;
 
 
-import com.noomtech.hoogas.config.ConfiguredApplicationsUpdatedListener;
+import com.noomtech.hoogas.config.DeployedApplicationsUpdatedListener;
 
 /**
  * Handles user-requested operations for the applications e.g. starting and stopping
  * @author Joshua Newman, December 2024
  */
-public class AppManagementService implements ConfiguredApplicationsUpdatedListener {
+public class AppManagementService implements DeployedApplicationsUpdatedListener {
 
 
     private volatile boolean isShutDown = false;
@@ -45,7 +45,7 @@ public class AppManagementService implements ConfiguredApplicationsUpdatedListen
     }
 
     @Override
-    public void onApplicationUpdated() {
+    public void onApplicationsUpdated() {
         synchronized(mutex) {
 
         }

@@ -21,7 +21,7 @@ public class Constants {
         private final File theDirectory;
         HoogasDirectory(String dirName) {
             this.dirName = dirName;
-            this.theDirectory = new File(INSTALLATION_DIR + File.pathSeparator + dirName);
+            this.theDirectory = new File(INSTALLATION_DIR + File.separator + dirName);
         }
 
         public String getDirName() {

@@ -6,5 +6,5 @@ package com.noomtech.hoogas.datamodels;
  * @param text
  * @param from
  */
-public record InternalMessageInbound(String text, Application from) {
+public record InternalMessageInbound(String text, String from) {
 }

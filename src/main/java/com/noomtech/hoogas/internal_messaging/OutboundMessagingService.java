@@ -1,12 +1,12 @@
 package com.noomtech.hoogas.internal_messaging;
 
 
-import com.noomtech.hoogas.config.HoogasConfigService;
 import com.noomtech.hoogas.constants.Constants;
-import com.noomtech.hoogas.datamodels.Application;
 import com.noomtech.hoogas.datamodels.InternalMessageOutbound;
+import com.noomtech.hoogas.deployment.DeployedApplicationsHolder;
 
 import java.io.*;
+import java.util.Map;
 
 /**
  * Used by Hoogas to send messages to its applications.  The messaging protocol is just file transfer, as it doesn't have to fast or to be able to
@@ -51,11 +51,12 @@ public class OutboundMessagingService {
      * @throws Exception
      */
     public void send(InternalMessageOutbound internalMessageOutbound) throws Exception {
-        var apps = HoogasConfigService.getInstance().getDeployedApplications();
-        for(Application app : apps.values()) {
+        var apps = DeployedApplicationsHolder.getDeployedApplications();
+        for(Map.Entry<String,String> entry : apps.entrySet()) {
             try {
-                var file = new File(app.installationDirectory() + File.pathSeparator +
-                        Constants.HoogasDirectory.INTERNAL_MSGS_FROM_HOOGAS.getDirName() + File.pathSeparator + internalMessageOutbound.type().name() + ".hoogas_msg");
+                var file = new File(Constants.HoogasDirectory.APPLICATIONS.getDirFile().getPath() +
+                        File.separator + entry.getKey() + Constants.NAME_VERSION_SEPARATOR + entry.getValue() + File.separator +
+                        Constants.HoogasDirectory.INTERNAL_MSGS_FROM_HOOGAS.getDirName() + File.separator + internalMessageOutbound.type().name() + ".hoogas_msg");
                 if (file.exists() && !file.delete()) {
                     throw new IllegalStateException("Previous message file: " + file.getPath() + " could not be deleted");
                 }
