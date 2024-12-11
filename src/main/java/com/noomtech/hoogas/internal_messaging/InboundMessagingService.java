@@ -28,9 +28,8 @@ public class InboundMessagingService implements PeriodicChecker {
 
     private static final List<StatsListener> statsListeners = new CopyOnWriteArrayList<>();
     private static final List<ConfigRequestListener> configRequestListeners = new CopyOnWriteArrayList<>();
+    private final long checkingInterval;
     private long whenLastRunFinished;
-
-    private final long CHECKING_INTERVAL = Long.parseLong(HoogasConfigService.getInstance().getSetting("inbound_msg_service.checking.interval"));
 
     //enum that represents the different types of message that can be received.  It's also also to segregate the types of messages received
     // and their different listener lists and to fire those listeners.
@@ -49,34 +48,41 @@ public class InboundMessagingService implements PeriodicChecker {
         }
 
         void fireListeners() {
-            for(InboundInternalMessageListener listener : listeners) {
-                listener.onMessageReceived(receivedMessages);
+            if(!receivedMessages.isEmpty()) {
+                for (InboundInternalMessageListener listener : listeners) {
+                    listener.onMessageReceived(receivedMessages);
+                }
+                receivedMessages.clear();
             }
-            receivedMessages.clear();
         }
     }
 
-    public InboundMessagingService() {
+    public InboundMessagingService(long checkingInterval) {
+        this.checkingInterval = checkingInterval;
         //@todo - initialize using config holder
     }
 
     @Override
     public void doCheck() throws Exception {
         if(checkShouldRun(whenLastRunFinished)) {
-            collect();
-            whenLastRunFinished = System.currentTimeMillis();
+            try {
+                collect();
+            }
+            finally {
+                whenLastRunFinished = System.currentTimeMillis();
+            }
         }
     }
 
     @Override
     public long getInterval() {
-        return CHECKING_INTERVAL;
+        return checkingInterval;
     }
 
     /**
      * Scans each application's message directory for inbound messages and fires the listeners added to this class.
      */
-    private void collect() throws Exception {
+    void collect() throws Exception {
         var apps = DeployedApplicationsHolder.getDeployedApplications();
         //Messages are collected first during the scanning routine and then sent in bulk.  It's more efficient
         //than firing all the listeners for each message from each application.
@@ -88,17 +94,26 @@ public class InboundMessagingService implements PeriodicChecker {
                 var msgFiles = internalMessagesDir.listFiles();
                 for (File msgFile : msgFiles) {
                     try {
-                        var dataType = DataTypeInbound.valueOf(msgFile.getName());
-                        try (var reader = new BufferedReader(new FileReader(msgFile))) {
-                            var message = new InternalMessageInbound(reader.readLine(), entry.getKey());
-                            dataType.addReceivedMessage(message);
-                            if(!msgFile.delete()) {
+                        if(!msgFile.isDirectory()) {
+                            var dataType = DataTypeInbound.valueOf(msgFile.getName());
+                            try (var reader = new BufferedReader(new FileReader(msgFile))) {
+                                InternalMessageInbound message = new InternalMessageInbound(reader.readLine(), entry.getKey());
+                                dataType.addReceivedMessage(message);
+                            }
+                            if (!msgFile.delete()) {
                                 throw new IllegalStateException("Could not delete message file: " + msgFile.getPath());
                             }
                         }
-                    } catch (Exception e) {
-                        //todo - add proper logging and an informative message
-                        e.printStackTrace();
+                        else {
+                            System.out.println("Found a directory in " + internalMessagesDir.getPath() + ": '" + msgFile.getPath() + "'.  Ignoring this.");
+                        }
+                    }
+                    catch (IllegalArgumentException e) {
+                        //todo - add proper logging
+                       System.out.println("Invalid inbound message file in " + internalMessagesDir.getPath() + ": " + msgFile.getPath() + "  " + e);
+                    }
+                    catch(Exception e) {
+                        System.out.println("Problem with message file : " + msgFile.getPath() + "  " + e);
                     }
                 }
             }

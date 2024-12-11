@@ -22,8 +22,13 @@ public class Main {
 
     //todo - write the client-side functionality
     //todo - add a webserver that can be used by the services that interact with the users
-    //todo - unit tests for the inbound and outbound messaging
+    //todo - unit tests for the outbound messaging
+    //todo - Implement the functionality that populates HoogasConfigService
     //todo - Use Application objects in the deployed application store.
+    //todo - In app management service put the requests from outside into a queue
+    //       and make the app management service a periodic checker where the requests in the queue
+    //       are processed by the main thread.  This will keep the application processing single-threaded
+
 
     private volatile boolean shutdown;
 
@@ -58,7 +63,7 @@ public class Main {
         OutboundMessagingService.init();
 
         var deploymentService = new DeploymentService(Integer.parseInt(HoogasConfigService.getInstance().getSetting("deployment_service.checking_interval")));
-        var inboundMessageService = new InboundMessagingService();
+        var inboundMessageService = new InboundMessagingService(Integer.parseInt(HoogasConfigService.getInstance().getSetting("inbound_message_service.checking_interval")));
         var monitoringService = new MonitoringService();
         var publicConfigService = new PublicConfigService();
         var appManagementService = new AppManagementService();
