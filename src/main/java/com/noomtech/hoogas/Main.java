@@ -8,8 +8,8 @@ import com.noomtech.hoogas.deployment.DeployedApplicationsHolder;
 import com.noomtech.hoogas.deployment.DeploymentService;
 import com.noomtech.hoogas.deployment.PeriodicChecker;
 import com.noomtech.hoogas.internal_messaging.InboundMessagingService;
-import com.noomtech.hoogas.internal_messaging.OutboundMessagingService;
 import com.noomtech.hoogas.monitoring.MonitoringService;
+
 import static com.noomtech.hoogas.constants.Constants.INSTALLATION_DIR;
 
 
@@ -22,7 +22,6 @@ public class Main {
 
     //todo - write the client-side functionality
     //todo - add a webserver that can be used by the services that interact with the users
-    //todo - unit tests for the outbound messaging
     //todo - Implement the functionality that populates HoogasConfigService
     //todo - Use Application objects in the deployed application store.
     //todo - In app management service put the requests from outside into a queue
@@ -58,9 +57,8 @@ public class Main {
 
     private Main() throws Exception {
 
-        //Set these up first as they are used by the other services
+        //Used by many things, so set this up first
         HoogasConfigService.init();
-        OutboundMessagingService.init();
 
         var deploymentService = new DeploymentService(Integer.parseInt(HoogasConfigService.getInstance().getSetting("deployment_service.checking_interval")));
         var inboundMessageService = new InboundMessagingService(Integer.parseInt(HoogasConfigService.getInstance().getSetting("inbound_message_service.checking_interval")));

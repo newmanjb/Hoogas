@@ -4,8 +4,11 @@ package com.noomtech.hoogas.internal_messaging;
 import com.noomtech.hoogas.constants.Constants;
 import com.noomtech.hoogas.datamodels.InternalMessageOutbound;
 import com.noomtech.hoogas.deployment.DeployedApplicationsHolder;
+import com.noomtech.hoogas.put_in_shared_project.SharedConstants;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -19,23 +22,16 @@ import java.util.Map;
 public class OutboundMessagingService {
 
 
-    private static volatile boolean initialized;
-    private static volatile OutboundMessagingService INSTANCE;
-
-
     //Represents the different types of outbound (hoogas --> application) messages
     public enum DataTypeOutbound {
-        GLOBAL_CFG_RESPONSE
+        GLOBAL_CFG_RESPONSE,
+        //Just present so as we can write unit tests that put >1 message in each application's msg directory.
+        //DELETE WHEN ANOTHER TYPE IS ADDED
+        DUMMY
     }
 
-    //Only ever called by the start-up routine, which calls it synchronously
-    public static void init() {
-        if(INSTANCE != null) {
-            throw new IllegalArgumentException(OutboundMessagingService.class.getName() + " is already initialized");
-        }
-
-        INSTANCE = new OutboundMessagingService();
-        initialized = true;
+    private static final class INSTANCE_HOLDER {
+        private static OutboundMessagingService INSTANCE = new OutboundMessagingService();
     }
 
     private OutboundMessagingService() {
@@ -43,26 +39,32 @@ public class OutboundMessagingService {
     }
 
     public static OutboundMessagingService getInstance() {
-        return INSTANCE;
+        return INSTANCE_HOLDER.INSTANCE;
     }
 
     /**
      * Sends the outbound message to all applications under hoogas
-     * @throws Exception
+     * @return Null if all messages sent successfully, otherwise a list of the names of apps it failed to send to
      */
-    public void send(InternalMessageOutbound internalMessageOutbound) throws Exception {
+    public List<String> send(InternalMessageOutbound internalMessageOutbound) {
         var apps = DeployedApplicationsHolder.getDeployedApplications();
+        var couldntSendTo = new ArrayList<String>();
         for(Map.Entry<String,String> entry : apps.entrySet()) {
             try {
                 var file = new File(Constants.HoogasDirectory.APPLICATIONS.getDirFile().getPath() +
                         File.separator + entry.getKey() + Constants.NAME_VERSION_SEPARATOR + entry.getValue() + File.separator +
-                        Constants.HoogasDirectory.INTERNAL_MSGS_FROM_HOOGAS.getDirName() + File.separator + internalMessageOutbound.type().name() + ".hoogas_msg");
-                if (file.exists() && !file.delete()) {
-                    throw new IllegalStateException("Previous message file: " + file.getPath() + " could not be deleted");
+                        Constants.HoogasDirectory.INTERNAL_MSGS_FROM_HOOGAS.getDirName() + File.separator + internalMessageOutbound.type().name() + SharedConstants.HOOGAS_TO_APP_MSG_FILE_EXTENSION);
+
+                if (file.exists()) {
+                    System.out.println("INFO - Hoogas -> App message for app " + entry.getKey() + " of message type " +
+                            internalMessageOutbound.type() + " with content '" + internalMessageOutbound.text() + "' will overwrite existing message with same type which hasn't been picked up yet");
+                    if(!file.delete()) {
+                        throw new IllegalStateException("Could not delete file: " + file.getPath());
+                    }
                 }
 
-                if (!file.createNewFile()) {
-                    throw new IllegalStateException("Could not create message file: " + file.getPath());
+                if(!file.createNewFile()) {
+                    throw new IllegalStateException("Could not create file: " + file.getPath());
                 }
 
                 try (var fileWriter = new BufferedWriter(new FileWriter(file))) {
@@ -72,7 +74,10 @@ public class OutboundMessagingService {
             catch(Exception e) {
                 //todo - add logging and log a useful message
                 e.printStackTrace();
+                couldntSendTo.add(entry.getKey());
             }
         }
+
+        return couldntSendTo.isEmpty() ? null : couldntSendTo;
     }
 }
