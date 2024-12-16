@@ -22,11 +22,7 @@ public class Main {
 
     //todo - write the client-side functionality
     //todo - add a webserver that can be used by the services that interact with the users
-    //todo - Implement the functionality that populates HoogasConfigService
     //todo - Use Application objects in the deployed application store.
-    //todo - In app management service put the requests from outside into a queue
-    //       and make the app management service a periodic checker where the requests in the queue
-    //       are processed by the main thread.  This will keep the application processing single-threaded
 
 
     private volatile boolean shutdown;
