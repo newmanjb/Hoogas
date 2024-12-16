@@ -62,7 +62,7 @@ public class Main {
 
         var deploymentService = new DeploymentService(Integer.parseInt(HoogasConfigService.getInstance().getSetting("deployment_service.checking_interval")));
         var inboundMessageService = new InboundMessagingService(Integer.parseInt(HoogasConfigService.getInstance().getSetting("inbound_message_service.checking_interval")));
-        var monitoringService = new MonitoringService();
+        var monitoringService = new MonitoringService(Integer.parseInt(HoogasConfigService.getInstance().getSetting("monitoring_service.checking_interval")));
         var publicConfigService = new PublicConfigService();
         var appManagementService = new AppManagementService();
 
@@ -82,7 +82,7 @@ public class Main {
         //These services have routines which need to be run at set intervals e.g. checking for new messages or new deployments.
         //I don't see the point in running them in a separate thread, as they are not very demanding routines and it makes everything
         //a lot simpler
-        var periodicCheckers = new PeriodicChecker[]{deploymentService, inboundMessageService};
+        var periodicCheckers = new PeriodicChecker[]{deploymentService, inboundMessageService, monitoringService};
         while(!shutdown) {
             for(PeriodicChecker periodicChecker : periodicCheckers) {
                 try {
