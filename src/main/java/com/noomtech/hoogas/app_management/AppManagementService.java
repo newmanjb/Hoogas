@@ -86,6 +86,9 @@ public class AppManagementService implements DeployedApplicationsUpdatedListener
 
     @Override
     public void onApplicationsUpdated() {
-        //todo - May need to introduce a reentrant readwrite lock and do a write-lock on the map to add a new executor for the deployed application
+        //todo - In order to keep the main thread lock-free we may have to temporarily block all requests to this class via a boolean like the shut-down boolean and then
+        //wait for each thread in each application's executor to finish its current task (use .join()) and then rebuild the application map.
+        // We may need to make this class a PeriodicChecker, do the aforementioned ops in a Future and check it each time a check has been done.  Once it's done then we can
+        //unset the boolean we set earlier.
     }
 }

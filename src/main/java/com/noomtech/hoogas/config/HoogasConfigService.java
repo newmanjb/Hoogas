@@ -1,7 +1,10 @@
 package com.noomtech.hoogas.config;
 
+import com.noomtech.hoogas.constants.Constants;
+
+import java.io.File;
+import java.io.FileReader;
 import java.util.*;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
@@ -11,14 +14,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class HoogasConfigService {
 
 
-    private final Map<String,String> config = new HashMap<>();
-    private final ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
+    private final Properties config;
 
     private static volatile HoogasConfigService INSTANCE;
 
 
     //Only ever called synchronously by the start-up routine
-    public static void init() {
+    public static void init() throws Exception {
         if(INSTANCE != null) {
             throw new IllegalArgumentException(HoogasConfigService.class.getName() + " is already initialized");
         }
@@ -27,22 +29,18 @@ public class HoogasConfigService {
     }
 
 
-    private HoogasConfigService() {
-        //todo - read environment variable for root dir and populate config map
+    private HoogasConfigService() throws Exception {
+        var configDir = Constants.HoogasDirectory.CONFIG.getDirFile() + File.separator + Constants.HOOGAS_CONFIG_FILE_NAME;
+        Properties properties = new Properties();
+        properties.load(new FileReader(configDir));
+        config = properties;
     }
 
     public static HoogasConfigService getInstance() {
         return INSTANCE;
     }
 
-
     public String getSetting(String key) {
-        try {
-            reentrantReadWriteLock.readLock().lock();
-            return config.get(key);
-        }
-        finally {
-            reentrantReadWriteLock.readLock().unlock();
-        }
+        return Optional.of(config.getProperty(key)).orElseThrow(() -> new IllegalArgumentException("Could not find setting: " + key));
     }
 }
