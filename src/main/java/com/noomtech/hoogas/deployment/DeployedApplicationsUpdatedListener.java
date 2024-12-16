@@ -1,4 +1,4 @@
-package com.noomtech.hoogas.config;
+package com.noomtech.hoogas.deployment;
 
 
 /**

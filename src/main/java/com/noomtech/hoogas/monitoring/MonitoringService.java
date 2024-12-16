@@ -1,6 +1,6 @@
 package com.noomtech.hoogas.monitoring;
 
-import com.noomtech.hoogas.config.DeployedApplicationsUpdatedListener;
+import com.noomtech.hoogas.deployment.DeployedApplicationsUpdatedListener;
 import com.noomtech.hoogas.datamodels.InternalMessageInbound;
 import com.noomtech.hoogas.internal_messaging.StatsListener;
 
