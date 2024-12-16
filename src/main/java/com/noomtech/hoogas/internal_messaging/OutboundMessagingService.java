@@ -3,7 +3,6 @@ package com.noomtech.hoogas.internal_messaging;
 
 import com.noomtech.hoogas.constants.Constants;
 import com.noomtech.hoogas.datamodels.InternalMessageOutbound;
-import com.noomtech.hoogas.deployment.DeployedApplicationsHolder;
 import com.noomtech.hoogas.put_in_shared_project.SharedConstants;
 
 import java.io.*;
@@ -46,10 +45,9 @@ public class OutboundMessagingService {
      * Sends the outbound message to all applications under hoogas
      * @return Null if all messages sent successfully, otherwise a list of the names of apps it failed to send to
      */
-    public List<String> send(InternalMessageOutbound internalMessageOutbound) {
-        var apps = DeployedApplicationsHolder.getDeployedApplications();
+    public List<String> send(InternalMessageOutbound internalMessageOutbound, Map<String,String> destinationApps) {
         var couldntSendTo = new ArrayList<String>();
-        for(Map.Entry<String,String> entry : apps.entrySet()) {
+        for(Map.Entry<String,String> entry : destinationApps.entrySet()) {
             try {
                 var file = new File(Constants.HoogasDirectory.APPLICATIONS.getDirFile().getPath() +
                         File.separator + entry.getKey() + Constants.NAME_VERSION_SEPARATOR + entry.getValue() + File.separator +

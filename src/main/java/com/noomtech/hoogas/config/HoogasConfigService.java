@@ -30,7 +30,7 @@ public class HoogasConfigService {
 
 
     private HoogasConfigService() throws Exception {
-        var configDir = Constants.HoogasDirectory.CONFIG.getDirFile() + File.separator + Constants.HOOGAS_CONFIG_FILE_NAME;
+        var configDir = Constants.HoogasDirectory.CONFIG.getDirFile().getPath() + File.separator + Constants.HOOGAS_CONFIG_FILE_NAME;
         Properties properties = new Properties();
         properties.load(new FileReader(configDir));
         config = properties;

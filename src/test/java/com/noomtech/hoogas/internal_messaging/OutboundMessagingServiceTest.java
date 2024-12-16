@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class OutboundMessagingServiceTest {
 
@@ -72,13 +73,13 @@ public class OutboundMessagingServiceTest {
 
     //Send 2 messages of different types which will each go to the 2 apps we've set up, then check their messaging directories
     @Test
-    public void test1() throws Exception {
+    public void test() throws Exception {
 
         OutboundMessagingService outboundMessagingService = OutboundMessagingService.getInstance();
-        var msg1 = new InternalMessageOutbound("test1 - 1", OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE);
-        var msg2 = new InternalMessageOutbound("test1 - 2", OutboundMessagingService.DataTypeOutbound.DUMMY);
-        assertNull(outboundMessagingService.send(msg1));
-        assertNull(outboundMessagingService.send(msg2));
+        var msg1 = new InternalMessageOutbound("test - 1", OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE);
+        var msg2 = new InternalMessageOutbound("test - 2", OutboundMessagingService.DataTypeOutbound.DUMMY);
+        assertNull(outboundMessagingService.send(msg1, DeployedApplicationsHolder.getDeployedApplications()));
+        assertNull(outboundMessagingService.send(msg2, DeployedApplicationsHolder.getDeployedApplications()));
 
         var expectedContent = new HashMap<String,String>();
         expectedContent.put(OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE.name() + SharedConstants.HOOGAS_TO_APP_MSG_FILE_EXTENSION, msg1.text());
@@ -93,16 +94,16 @@ public class OutboundMessagingServiceTest {
 
         OutboundMessagingService outboundMessagingService = OutboundMessagingService.getInstance();
         var msg0 = new InternalMessageOutbound("shouldn't see this", OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE);
-        assertNull(outboundMessagingService.send(msg0));
+        assertNull(outboundMessagingService.send(msg0, DeployedApplicationsHolder.getDeployedApplications()));
         var expectedContent = new HashMap<String,String>();
         expectedContent.put(OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE.name() + SharedConstants.HOOGAS_TO_APP_MSG_FILE_EXTENSION, msg0.text());
         checkMessagingDir(messageDirectoryApp1, expectedContent);
         checkMessagingDir(messageDirectoryApp2, expectedContent);
 
-        var msg1 = new InternalMessageOutbound("test1 - 1", OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE);
-        var msg2 = new InternalMessageOutbound("test1 - 2", OutboundMessagingService.DataTypeOutbound.DUMMY);
-        assertNull(outboundMessagingService.send(msg1));
-        assertNull(outboundMessagingService.send(msg2));
+        var msg1 = new InternalMessageOutbound("test - 1", OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE);
+        var msg2 = new InternalMessageOutbound("test - 2", OutboundMessagingService.DataTypeOutbound.DUMMY);
+        assertNull(outboundMessagingService.send(msg1, DeployedApplicationsHolder.getDeployedApplications()));
+        assertNull(outboundMessagingService.send(msg2, DeployedApplicationsHolder.getDeployedApplications()));
 
         expectedContent.clear();
         expectedContent.put(OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE.name() + SharedConstants.HOOGAS_TO_APP_MSG_FILE_EXTENSION, msg1.text());
@@ -120,14 +121,14 @@ public class OutboundMessagingServiceTest {
 
         OutboundMessagingService outboundMessagingService = OutboundMessagingService.getInstance();
 
-        var msg1 = new InternalMessageOutbound("test1 - 1", OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE);
-        var msg2 = new InternalMessageOutbound("test1 - 2", OutboundMessagingService.DataTypeOutbound.DUMMY);
-        var sendResult = outboundMessagingService.send(msg1);
+        var msg1 = new InternalMessageOutbound("test - 1", OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE);
+        var msg2 = new InternalMessageOutbound("test - 2", OutboundMessagingService.DataTypeOutbound.DUMMY);
+        var sendResult = outboundMessagingService.send(msg1, DeployedApplicationsHolder.getDeployedApplications());
         assertNotNull(sendResult);
         assertEquals(sendResult.size(), 1);
         assertEquals(sendResult.getFirst(), "TestApp1");
 
-        sendResult = outboundMessagingService.send(msg2);
+        sendResult = outboundMessagingService.send(msg2, DeployedApplicationsHolder.getDeployedApplications());
         assertNotNull(sendResult);
         assertEquals(sendResult.size(), 1);
         assertEquals(sendResult.getFirst(), "TestApp1");
@@ -141,6 +142,39 @@ public class OutboundMessagingServiceTest {
         expectedContent.put(OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE.name() + SharedConstants.HOOGAS_TO_APP_MSG_FILE_EXTENSION, msg1.text());
         expectedContent.put(OutboundMessagingService.DataTypeOutbound.DUMMY.name() + SharedConstants.HOOGAS_TO_APP_MSG_FILE_EXTENSION, msg2.text());
         checkMessagingDir(messageDirectoryApp2, expectedContent);
+    }
+
+    //Test everything still works when we're only sending to to a subset of applications
+    @Test
+    public void test4() throws Exception {
+
+        OutboundMessagingService outboundMessagingService = OutboundMessagingService.getInstance();
+        var msg1 = new InternalMessageOutbound("test - 1", OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE);
+        var msg2 = new InternalMessageOutbound("test - 2", OutboundMessagingService.DataTypeOutbound.DUMMY);
+        assertNull(outboundMessagingService.send(msg1,
+                DeployedApplicationsHolder.getDeployedApplications().entrySet().stream().filter(e -> {return e.getKey().equals("TestApp1");}).collect(
+                        Collectors.toMap(e->{return e.getKey();}, e-> {return e.getValue();}))));
+        assertNull(outboundMessagingService.send(msg2, DeployedApplicationsHolder.getDeployedApplications().entrySet().stream().filter(e -> {return e.getKey().equals("TestApp2");}).collect(
+                Collectors.toMap(e->{return e.getKey();}, e-> {return e.getValue();}))));
+
+        var expectedContent = new HashMap<String,String>();
+        expectedContent.put(OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE.name() + SharedConstants.HOOGAS_TO_APP_MSG_FILE_EXTENSION, msg1.text());
+        checkMessagingDir(messageDirectoryApp1, expectedContent);
+
+        expectedContent.clear();
+
+        expectedContent.put(OutboundMessagingService.DataTypeOutbound.DUMMY.name() + SharedConstants.HOOGAS_TO_APP_MSG_FILE_EXTENSION, msg2.text());
+        checkMessagingDir(messageDirectoryApp2, expectedContent);
+
+        expectedContent.clear();
+
+        //Send another message to test app 1 only and ensure that it overwrites the previous one
+        var msg3 = new InternalMessageOutbound("test - 3", OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE);
+        assertNull(outboundMessagingService.send(msg3,
+                DeployedApplicationsHolder.getDeployedApplications().entrySet().stream().filter(e -> {return e.getKey().equals("TestApp1");}).collect(
+                        Collectors.toMap(e->{return e.getKey();}, e-> {return e.getValue();}))));
+        expectedContent.put(OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE.name() + SharedConstants.HOOGAS_TO_APP_MSG_FILE_EXTENSION, msg3.text());
+        checkMessagingDir(messageDirectoryApp1, expectedContent);
     }
 
 

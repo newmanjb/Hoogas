@@ -2,7 +2,7 @@ package com.noomtech.hoogas;
 
 import com.noomtech.hoogas.app_management.AppManagementService;
 import com.noomtech.hoogas.config.HoogasConfigService;
-import com.noomtech.hoogas.config.public_config.PublicConfigService;
+import com.noomtech.hoogas.public_config.PublicConfigService;
 import com.noomtech.hoogas.constants.Constants;
 import com.noomtech.hoogas.deployment.DeployedApplicationsHolder;
 import com.noomtech.hoogas.deployment.DeploymentService;
@@ -63,7 +63,7 @@ public class Main {
         var deploymentService = new DeploymentService(Integer.parseInt(HoogasConfigService.getInstance().getSetting("deployment_service.checking_interval")));
         var inboundMessageService = new InboundMessagingService(Integer.parseInt(HoogasConfigService.getInstance().getSetting("inbound_message_service.checking_interval")));
         var monitoringService = new MonitoringService(Integer.parseInt(HoogasConfigService.getInstance().getSetting("monitoring_service.checking_interval")));
-        var publicConfigService = new PublicConfigService();
+        var publicConfigService = new PublicConfigService(Integer.parseInt(HoogasConfigService.getInstance().getSetting("public_config_service.checking_interval")));
         var appManagementService = new AppManagementService();
 
         //Set up the connections between these difference services
@@ -82,7 +82,7 @@ public class Main {
         //These services have routines which need to be run at set intervals e.g. checking for new messages or new deployments.
         //I don't see the point in running them in a separate thread, as they are not very demanding routines and it makes everything
         //a lot simpler
-        var periodicCheckers = new PeriodicChecker[]{deploymentService, inboundMessageService, monitoringService};
+        var periodicCheckers = new PeriodicChecker[]{deploymentService, inboundMessageService, monitoringService, publicConfigService};
         while(!shutdown) {
             for(PeriodicChecker periodicChecker : periodicCheckers) {
                 try {

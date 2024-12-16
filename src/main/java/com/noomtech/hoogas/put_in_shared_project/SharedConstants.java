@@ -9,4 +9,6 @@ public class SharedConstants {
 
 
     public static final String HOOGAS_TO_APP_MSG_FILE_EXTENSION = ".hoogas_msg";
+    public static final String NEWLINE = System.lineSeparator();
+
 }

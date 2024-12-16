@@ -7,6 +7,7 @@ public class Constants {
     public static final String NAME_VERSION_SEPARATOR = "___";
     public static final File INSTALLATION_DIR = new File(System.getProperty("installation_dir"));
     public static final String HOOGAS_CONFIG_FILE_NAME = "HoogasConfig.properties";
+    public static final String HOOGAS_PUBLIC_CONFIG_FILE_NAME = "HoogasPublicConfig.properties";
     //Represents each directory under the installation directory above.  Each directory has a different function.
     public enum HoogasDirectory {
 
