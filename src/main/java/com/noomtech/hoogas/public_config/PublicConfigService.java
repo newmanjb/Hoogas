@@ -34,7 +34,9 @@ public class PublicConfigService implements ConfigRequestListener, PeriodicCheck
         this.checkingInterval = checkingInterval;
         var configDir = Constants.HoogasDirectory.PUBLIC_CONFIG.getDirFile().getPath() + File.separator + Constants.HOOGAS_PUBLIC_CONFIG_FILE_NAME;
         Properties properties = new Properties();
-        properties.load(new FileReader(configDir));
+        try(var reader = new FileReader(configDir)) {
+            properties.load(reader);
+        }
         publicConfig = properties;
     }
 
