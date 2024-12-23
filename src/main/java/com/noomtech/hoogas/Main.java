@@ -10,7 +10,7 @@ import com.noomtech.hoogas.deployment.PeriodicChecker;
 import com.noomtech.hoogas.internal_messaging.InboundMessagingService;
 import com.noomtech.hoogas.monitoring.MonitoringService;
 
-import static com.noomtech.hoogas.constants.Constants.INSTALLATION_DIR;
+import static com.noomtech.hoogas_shared.constants.SharedConstants.INSTALLATION_DIR;
 
 
 /**

@@ -1,18 +1,14 @@
 package com.noomtech.hoogas.internal_messaging;
 
 
-import com.noomtech.hoogas.config.HoogasConfigService;
 import com.noomtech.hoogas.constants.Constants;
-import com.noomtech.hoogas.datamodels.Application;
 import com.noomtech.hoogas.datamodels.InternalMessageInbound;
 import com.noomtech.hoogas.deployment.DeployedApplicationsHolder;
 import com.noomtech.hoogas.deployment.PeriodicChecker;
+import com.noomtech.hoogas_shared.internal_messaging.MessageTypeFromApplications;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.*;
 
 /**
  * Used by Hoogas to receive messages from its applications.  The messaging protocol is just file transfer, as it doesn't have to fast or to be able to
@@ -26,40 +22,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class InboundMessagingService implements PeriodicChecker {
 
 
-    private static final List<StatsListener> statsListeners = new CopyOnWriteArrayList<>();
-    private static final List<ConfigRequestListener> configRequestListeners = new CopyOnWriteArrayList<>();
+    private Map<String, MessageProcessor> messageProcessors = new HashMap<>();
     private final long checkingInterval;
     private long whenLastRunFinished;
 
-    //enum that represents the different types of message that can be received.  It's also also to segregate the types of messages received
-    // and their different listener lists and to fire those listeners.
-    public enum DataTypeInbound {
-        STATS(statsListeners),
-        PUBLIC_CFG_REQUEST(configRequestListeners);
-
-        private final List<InternalMessageInbound> receivedMessages = new ArrayList<>();
-        private final List<? extends InboundInternalMessageListener> listeners;
-        DataTypeInbound(List<? extends InboundInternalMessageListener> listeners) {
-            this.listeners = listeners;
-        }
-
-        void addReceivedMessage(InternalMessageInbound message) {
-            receivedMessages.add(message);
-        }
-
-        void fireListeners() {
-            if(!receivedMessages.isEmpty()) {
-                for (InboundInternalMessageListener listener : listeners) {
-                    listener.onMessageReceived(receivedMessages);
-                }
-                receivedMessages.clear();
-            }
-        }
-    }
 
     public InboundMessagingService(long checkingInterval) {
         this.checkingInterval = checkingInterval;
-        //@todo - initialize using config holder
+
+        for(MessageTypeFromApplications type : MessageTypeFromApplications.values()) {
+            messageProcessors.put(type.name(), new MessageProcessor());
+        }
     }
 
     @Override
@@ -83,6 +56,7 @@ public class InboundMessagingService implements PeriodicChecker {
      * Scans each application's message directory for inbound messages and fires the listeners added to this class.
      */
     void collect() throws Exception {
+        var messageProcessorsToInvoke = new HashSet<MessageProcessor>();
         var apps = DeployedApplicationsHolder.getDeployedApplications();
         //Messages are collected first during the scanning routine and then sent in bulk.  It's more efficient
         //than firing all the listeners for each message from each application.
@@ -95,10 +69,11 @@ public class InboundMessagingService implements PeriodicChecker {
                 for (File msgFile : msgFiles) {
                     try {
                         if(!msgFile.isDirectory()) {
-                            var dataType = DataTypeInbound.valueOf(msgFile.getName());
+                            var messageProcessor = Objects.requireNonNull(messageProcessors.get(msgFile.getName()));
                             try (var reader = new BufferedReader(new FileReader(msgFile))) {
                                 InternalMessageInbound message = new InternalMessageInbound(reader.readLine(), entry.getKey());
-                                dataType.addReceivedMessage(message);
+                                messageProcessor.addReceivedMessage(message);
+                                messageProcessorsToInvoke.add(messageProcessor);
                             }
                             if (!msgFile.delete()) {
                                 throw new IllegalStateException("Could not delete message file: " + msgFile.getPath());
@@ -122,24 +97,55 @@ public class InboundMessagingService implements PeriodicChecker {
                 e.printStackTrace();
             }
         }
-        for(DataTypeInbound dataTypeInbound : DataTypeInbound.values()) {
-            dataTypeInbound.fireListeners();
+        for(MessageProcessor messageProcessor : messageProcessorsToInvoke) {
+            messageProcessor.processMessagesReceived();
+        }
+    }
+
+    private static class MessageProcessor {
+        private final List<InboundInternalMessageListener> listeners = new ArrayList<>();
+        private final List<InternalMessageInbound> messagesReceived = new ArrayList<>();
+        private void addReceivedMessage(InternalMessageInbound message){
+            messagesReceived.add(message);
+        }
+        private void addListener(InboundInternalMessageListener listener){
+            listeners.add(listener);
+        }
+        private void removeListener(InboundInternalMessageListener listener) {
+            listeners.remove(listener);
+        }
+        private void processMessagesReceived(){
+            if(!messagesReceived.isEmpty()) {
+                var readOnlyMessagesReceived = Collections.unmodifiableList(messagesReceived);
+                for (InboundInternalMessageListener listener : listeners) {
+                    listener.onMessageReceived(readOnlyMessagesReceived);
+                }
+                messagesReceived.clear();
+            }
         }
     }
 
     public void addConfigRequestListener(ConfigRequestListener listener) {
-        configRequestListeners.add(listener);
+        addMessageListener(MessageTypeFromApplications.PUBLIC_CFG_REQUEST, listener);
     }
 
     public void removeConfigRequestListener(ConfigRequestListener listener) {
-        configRequestListeners.remove(listener);
+        removeMessageListener(MessageTypeFromApplications.PUBLIC_CFG_REQUEST, listener);
     }
 
     public void addStatsListener(StatsListener listener) {
-        statsListeners.add(listener);
+        addMessageListener(MessageTypeFromApplications.STATS, listener);
     }
 
     public void removeStatsListener(StatsListener listener) {
-        statsListeners.remove(listener);
+        removeMessageListener(MessageTypeFromApplications.STATS, listener);
+    }
+
+    private void addMessageListener(MessageTypeFromApplications messageType, InboundInternalMessageListener listener) {
+        messageProcessors.get(messageType.name()).addListener(listener);
+    }
+
+    private void removeMessageListener(MessageTypeFromApplications messageType, InboundInternalMessageListener listener) {
+        messageProcessors.get(messageType.name()).removeListener(listener);
     }
 }

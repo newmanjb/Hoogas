@@ -3,12 +3,12 @@ package com.noomtech.hoogas.internal_messaging;
 
 import com.noomtech.hoogas.constants.Constants;
 import com.noomtech.hoogas.datamodels.InternalMessageOutbound;
-import com.noomtech.hoogas.put_in_shared_project.SharedConstants;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 
 /**
  * Used by Hoogas to send messages to its applications.  The messaging protocol is just file transfer, as it doesn't have to fast or to be able to
@@ -21,16 +21,8 @@ import java.util.Map;
 public class OutboundMessagingService {
 
 
-    //Represents the different types of outbound (hoogas --> application) messages
-    public enum DataTypeOutbound {
-        GLOBAL_CFG_RESPONSE,
-        //Just present so as we can write unit tests that put >1 message in each application's msg directory.
-        //DELETE WHEN ANOTHER TYPE IS ADDED
-        DUMMY
-    }
-
     private static final class INSTANCE_HOLDER {
-        private static OutboundMessagingService INSTANCE = new OutboundMessagingService();
+        private static final OutboundMessagingService INSTANCE = new OutboundMessagingService();
     }
 
     private OutboundMessagingService() {
@@ -51,7 +43,7 @@ public class OutboundMessagingService {
             try {
                 var file = new File(Constants.HoogasDirectory.APPLICATIONS.getDirFile().getPath() +
                         File.separator + entry.getKey() + Constants.NAME_VERSION_SEPARATOR + entry.getValue() + File.separator +
-                        Constants.HoogasDirectory.INTERNAL_MSGS_FROM_HOOGAS.getDirName() + File.separator + internalMessageOutbound.type().name() + SharedConstants.HOOGAS_TO_APP_MSG_FILE_EXTENSION);
+                        Constants.HoogasDirectory.INTERNAL_MSGS_FROM_HOOGAS.getDirName() + File.separator + internalMessageOutbound.type().name());
 
                 if (file.exists()) {
                     System.out.println("INFO - Hoogas -> App message for app " + entry.getKey() + " of message type " +

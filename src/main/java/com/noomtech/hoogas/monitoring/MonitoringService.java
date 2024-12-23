@@ -31,7 +31,6 @@ public class MonitoringService implements StatsListener, DeployedApplicationsUpd
     public MonitoringService(long checkingInterval) {
         this.checkingInterval = checkingInterval;
 
-        //todo - Adds itself as listener to private ccnfig updates so as it can pick up when there's a change in the deployed application e.g. a new app has been deployed (do this in Main instead?)
         //todo - construct a cache that's refreshed as below and which can be queried over REST (stick a tiny web-server in here).
     }
 

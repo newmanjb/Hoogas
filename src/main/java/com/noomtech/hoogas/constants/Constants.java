@@ -1,11 +1,14 @@
 package com.noomtech.hoogas.constants;
 
+import com.noomtech.hoogas_shared.constants.SharedConstants;
+
 import java.io.File;
+
+import static com.noomtech.hoogas_shared.constants.SharedConstants.INSTALLATION_DIR;
 
 public class Constants {
 
     public static final String NAME_VERSION_SEPARATOR = "___";
-    public static final File INSTALLATION_DIR = new File(System.getProperty("installation_dir"));
     public static final String HOOGAS_CONFIG_FILE_NAME = "HoogasConfig.properties";
     public static final String HOOGAS_PUBLIC_CONFIG_FILE_NAME = "HoogasPublicConfig.properties";
     //Represents each directory under the installation directory above.  Each directory has a different function.
@@ -14,9 +17,9 @@ public class Constants {
         CONFIG("config"),
         PUBLIC_CONFIG("public_config"),
         LOGS("logs"),
-        APPLICATIONS("applications"),
-        INTERNAL_MSGS_TO_HOOGAS("to_hoogas_messages"),
-        INTERNAL_MSGS_FROM_HOOGAS("from_hoogas_messages"),
+        APPLICATIONS(SharedConstants.APPLICATIONS_DIR_NAME),
+        INTERNAL_MSGS_TO_HOOGAS(SharedConstants.INTERNAL_MSGS_TO_HOOGAS_DIR_NAME),
+        INTERNAL_MSGS_FROM_HOOGAS(SharedConstants.INTERNAL_MSGS_FROM_HOOGAS_DIR_NAME),
         ARCHIVE("archive"),
         DEPLOYMENTS("deployments");
 

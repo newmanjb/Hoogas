@@ -3,6 +3,7 @@ package com.noomtech.hoogas.internal_messaging;
 import com.noomtech.hoogas.constants.Constants;
 import com.noomtech.hoogas.datamodels.InternalMessageInbound;
 import com.noomtech.hoogas.deployment.DeployedApplicationsHolder;
+import com.noomtech.hoogas_shared.internal_messaging.MessageTypeFromApplications;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -101,8 +102,8 @@ public class InboundMessagingServiceTest {
         inboundMessagingService.addConfigRequestListener(configRequestListener);
         inboundMessagingService.addStatsListener(statsListener);
 
-        sendInboundMessage(new InternalMessageInbound("config request 1", "TestApp1"), InboundMessagingService.DataTypeInbound.PUBLIC_CFG_REQUEST);
-        sendInboundMessage(new InternalMessageInbound("stats 1", "TestApp1"), InboundMessagingService.DataTypeInbound.STATS);
+        sendInboundMessage(new InternalMessageInbound("config request 1", "TestApp1"), MessageTypeFromApplications.PUBLIC_CFG_REQUEST);
+        sendInboundMessage(new InternalMessageInbound("stats 1", "TestApp1"), MessageTypeFromApplications.STATS);
 
         //Create some invalid message files
         var invalid1 = new File(messageDirectory + File.separator + "PLEASE_DONT");
@@ -138,7 +139,7 @@ public class InboundMessagingServiceTest {
     }
 
 
-    private void sendInboundMessage(InternalMessageInbound messageInbound, InboundMessagingService.DataTypeInbound type) throws Exception {
+    private void sendInboundMessage(InternalMessageInbound messageInbound, MessageTypeFromApplications type) throws Exception {
         var messageFile = new File(messageDirectory + File.separator + type);
         createFile(messageFile);
         try(BufferedWriter writer = new BufferedWriter(new FileWriter(messageFile))) {

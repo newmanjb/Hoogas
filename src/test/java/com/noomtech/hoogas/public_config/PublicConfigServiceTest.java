@@ -5,6 +5,7 @@ import com.noomtech.hoogas.datamodels.InternalMessageInbound;
 import com.noomtech.hoogas.datamodels.InternalMessageOutbound;
 import com.noomtech.hoogas.deployment.DeployedApplicationsHolder;
 import com.noomtech.hoogas.internal_messaging.OutboundMessagingService;
+import com.noomtech.hoogas_shared.internal_messaging.MessageTypeToApplications;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -19,7 +20,7 @@ import java.io.FileWriter;
 import java.util.Arrays;
 import java.util.Map;
 
-import static com.noomtech.hoogas.put_in_shared_project.SharedConstants.NEWLINE;
+import static com.noomtech.hoogas_shared.constants.SharedConstants.NEWLINE;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -84,7 +85,7 @@ public class PublicConfigServiceTest {
             assertNotNull(messageSent);
             assertNotNull(destinationApps);
             assert (messageSent.text().replace(NEWLINE, "").equals("testProp1=testProp1ValuetestProp2=testProp2Value"));
-            assert (messageSent.type() == OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE);
+            assert (messageSent.type() == MessageTypeToApplications.PUBLIC_CFG_RESPONSE);
             assert (destinationApps.size() == 2);
             assert (destinationApps.containsKey("TestApp1"));
             assert (destinationApps.containsKey("TestApp2"));
@@ -122,7 +123,7 @@ public class PublicConfigServiceTest {
             assertNotNull(messageSent);
             assertNotNull(destinationApps);
             assert (messageSent.text().replace(NEWLINE, "").equals("testProp1=testProp1ValuetestProp2=testProp2Value"));
-            assert (messageSent.type() == OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE);
+            assert (messageSent.type() == MessageTypeToApplications.PUBLIC_CFG_RESPONSE);
             assert (destinationApps.size() == 1);
             assert (destinationApps.containsKey("TestApp1"));
             assert (destinationApps.get("TestApp1").equals("1234"));

@@ -8,12 +8,14 @@ import com.noomtech.hoogas.deployment.DeployedApplicationsHolder;
 import com.noomtech.hoogas.deployment.PeriodicChecker;
 import com.noomtech.hoogas.internal_messaging.ConfigRequestListener;
 import com.noomtech.hoogas.internal_messaging.OutboundMessagingService;
-import com.noomtech.hoogas.put_in_shared_project.SharedConstants;
+import com.noomtech.hoogas_shared.internal_messaging.MessageTypeToApplications;
 
 import java.io.File;
 import java.io.FileReader;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.noomtech.hoogas_shared.constants.SharedConstants.NEWLINE;
 
 /**
  * Handles requests from the applications for the public configuration.
@@ -58,14 +60,14 @@ public class PublicConfigService implements ConfigRequestListener, PeriodicCheck
                 if (!configRequests.isEmpty()) {
                     StringBuilder propertiesStringBuilder = new StringBuilder();
                     for (Map.Entry<Object, Object> property : publicConfig.entrySet()) {
-                        propertiesStringBuilder.append(property.getKey()).append("=").append(property.getValue()).append(SharedConstants.NEWLINE);
+                        propertiesStringBuilder.append(property.getKey()).append("=").append(property.getValue()).append(NEWLINE);
                     }
                     var propertiesString = propertiesStringBuilder.toString();
 
                     var destinations = DeployedApplicationsHolder.getDeployedApplications().entrySet().stream().filter(
                             e -> configRequests.contains(e.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-                    OutboundMessagingService.getInstance().send(new InternalMessageOutbound(propertiesString, OutboundMessagingService.DataTypeOutbound.GLOBAL_CFG_RESPONSE), destinations);
+                    OutboundMessagingService.getInstance().send(new InternalMessageOutbound(propertiesString, MessageTypeToApplications.PUBLIC_CFG_RESPONSE), destinations);
                 }
             }
             finally {

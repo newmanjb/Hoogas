@@ -1,10 +1,6 @@
 package com.noomtech.hoogas.deployment;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
@@ -16,7 +12,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class DeployedApplicationsHolder {
 
 
-    private static final List<DeployedApplicationsUpdatedListener> LISTENERS = new CopyOnWriteArrayList<>();
+    private static final List<DeployedApplicationsUpdatedListener> LISTENERS = new ArrayList<>();
 
     private static final Map<String,String> DEPLOYED_APPLICATIONS = new HashMap<>();
     private static final ReentrantReadWriteLock LOCK = new ReentrantReadWriteLock();
