@@ -20,7 +20,6 @@ import static com.noomtech.hoogas_shared.constants.SharedConstants.INSTALLATION_
 public class Main {
 
 
-    //todo - write the client-side functionality
     //todo - add a webserver that can be used by the services that interact with the users
     //todo - Use Application objects in the deployed application store.
 
