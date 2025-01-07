@@ -19,8 +19,7 @@ public class MessageSender implements AutoCloseable {
     private final String host;
     private final int port;
     protected volatile Socket socket;
-    private volatile OutputStreamWriter outputStreamWriter;
-
+    private HoogasMessageWriter hoogasMessageWriter;
 
     MessageSender(String host, int port) {
         this.host = host;
@@ -30,16 +29,15 @@ public class MessageSender implements AutoCloseable {
 
     public void connect() throws IOException {
         socket = new Socket(host, port);
-        outputStreamWriter = new OutputStreamWriter(socket.getOutputStream());
+        hoogasMessageWriter = new HoogasMessageWriter(new OutputStreamWriter(socket.getOutputStream()));
     }
 
     public void send(String message) throws IOException {
         doSend(message);
     }
 
-    protected void doSend(String message) throws IOException {
-        outputStreamWriter.write(message + Constants.MSG_SEPARATOR_CHAR);
-        outputStreamWriter.flush();
+    protected void doSend(String msg) throws IOException {
+        hoogasMessageWriter.doSend(msg);
     }
 
     @Override
