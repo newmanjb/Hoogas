@@ -8,7 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Used to execute one {@link Runnable} instance at a time and does not allow submission of other tasks if one is already running.
  * @author Joshua Newman, December 2024
  */
-public class AppManagementTaskExecutor {
+class AppManagementTaskExecutor {
 
 
     private volatile boolean shutdown;
