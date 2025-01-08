@@ -57,7 +57,8 @@ public class BufferedMessageSender implements AutoCloseable, Runnable {
      * Initializes the instance.  Should be called before any sending operations are performed.
      * Classes should call this method and then wait for the associated {@link ConnectionListener#onConnectionEstablished(int)}
      * event or the {@link ConnectionListener#onConnectionTimedOut(int)} event on the {@link ConnectionListener} instance
-     * they provided in the constructor before sending anything.
+     * they provided in the constructor before sending anything.  If the connection is lost then a {@link ConnectionListener#onConnectionLost(int)}
+     * event will be received.
      * @throws IllegalArgumentException If this method is called more than once or if the instance has been shut-down
      */
     public void start() {
