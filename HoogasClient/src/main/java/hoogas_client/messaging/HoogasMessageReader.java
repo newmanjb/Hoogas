@@ -28,6 +28,7 @@ class HoogasMessageReader {
      * to this method, the second and third call would return an empty list, and the fourth call would return the third message:
      * ab¬cd¬efghijklmnoprstuvwxyz¬
      * If less than the specified chunk size is available to read then only the characters that are available are processed.
+     * THIS METHOD IS NOT THREAD-SAFE.
      * The message {@link Constants#MSG_SEPARATOR_CHAR} character is not included in the returned messages.
      * @throws IOException If the socket can't be read e.g. it's been closed unexpectedly
      */
