@@ -72,7 +72,7 @@ public class MessageSenderTest {
     }
 
 
-    private class TestMessageReceiver implements AutoCloseable {
+    private static class TestMessageReceiver implements AutoCloseable {
 
         private Socket socket;
         private ServerSocket serverSocket;
