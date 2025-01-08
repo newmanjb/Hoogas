@@ -14,6 +14,10 @@ class HoogasMessageReader {
     private final InputStreamReader reader;
     private final char[] receivedMsgBuffer;
 
+    /**
+     * @param reader Used to read the character stream
+     * @param chunkSize The size of the chunks to be read from the stream in characters.
+     */
     HoogasMessageReader(InputStreamReader reader, int chunkSize) {
         this.reader = reader;
         this.receivedMsgBuffer = new char[chunkSize];
